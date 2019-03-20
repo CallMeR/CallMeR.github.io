@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+
+<html class="theme-next pisces use-motion" lang="zh-CN">
+<head><meta name="generator" content="Hexo 3.8.0">
+  <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css?v=4.6.2">
+
+<link rel="stylesheet" href="/css/main.css?v=7.0.1">
+
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png?v=7.0.1">
+
+
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png?v=7.0.1">
+
+
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png?v=7.0.1">
+
+
+  <link rel="mask-icon" href="/images/logo.svg?v=7.0.1" color="#222">
+
+
+
+
+
+
+
+<script id="hexo.configurations">
+  var NexT = window.NexT || {};
+  var CONFIG = {
+    root: '/',
+    scheme: 'Pisces',
+    version: '7.0.1',
+    sidebar: {"position":"left","display":"post","offset":12,"onmobile":false,"dimmer":false},
+    back2top: true,
+    back2top_sidebar: false,
+    fancybox: false,
+    fastclick: false,
+    lazyload: false,
+    tabs: true,
+    motion: {"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},
+    algolia: {
+      applicationID: '',
+      apiKey: '',
+      indexName: '',
+      hits: {"per_page":10},
+      labels: {"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}
+    }
+  };
+</script>
+
+
+  
+
+
+
+
+  <meta name="description" content="很多情况下，需要使用自建的云端文件存储软件满足日常私有化使用需求。 借此机会，记录一下使用Docker化的Seafile和OnlyOffice组件，在阿里云中配置私人云端文件存储服务，并可以在线编辑。">
+<meta name="keywords" content="Nginx,Seafile,Onlyoffice,Docker">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Nginx与Docker配置Seafile+Onlyoffice环境">
+<meta property="og:url" content="http://arguler.com/2019/03/19/Seafile Onlyoffice 配置/index.html">
+<meta property="og:site_name" content="ARGULER">
+<meta property="og:description" content="很多情况下，需要使用自建的云端文件存储软件满足日常私有化使用需求。 借此机会，记录一下使用Docker化的Seafile和OnlyOffice组件，在阿里云中配置私人云端文件存储服务，并可以在线编辑。">
+<meta property="og:locale" content="zh-CN">
+<meta property="og:updated_time" content="2019-03-20T01:03:35.309Z">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="使用Nginx与Docker配置Seafile+Onlyoffice环境">
+<meta name="twitter:description" content="很多情况下，需要使用自建的云端文件存储软件满足日常私有化使用需求。 借此机会，记录一下使用Docker化的Seafile和OnlyOffice组件，在阿里云中配置私人云端文件存储服务，并可以在线编辑。">
+
+
+
+
+
+
+  <link rel="canonical" href="http://arguler.com/2019/03/19/Seafile Onlyoffice 配置/">
+
+
+
+<script id="page.configurations">
+  CONFIG.page = {
+    sidebar: "",
+  };
+</script>
+
+  <title>使用Nginx与Docker配置Seafile+Onlyoffice环境 | ARGULER</title>
+  
+
+
+
+
+
+
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .motion-element,
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-title { opacity: initial; }
+
+  .use-motion .logo,
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" lang="zh-CN">
+
+  
+  
+    
+  
+
+  <div class="container sidebar-position-left page-post-detail">
+    <div class="headband"></div>
+
+    <header id="header" class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-wrapper">
+  <div class="site-meta">
+    
+
+    <div class="custom-logo-site-title">
+      <a href="/" class="brand" rel="start">
+        <span class="logo-line-before"><i></i></span>
+        <span class="site-title">ARGULER</span>
+        <span class="logo-line-after"><i></i></span>
+      </a>
+    </div>
+    
+      
+        <p class="site-subtitle">记录点滴，逐步成长</p>
+      
+    
+    
+  </div>
+
+  <div class="site-nav-toggle">
+    <button aria-label="切换导航栏">
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+      <span class="btn-bar"></span>
+    </button>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  
+    <ul id="menu" class="menu">
+      
+        
+        
+        
+          
+          <li class="menu-item menu-item-home">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/" rel="section"><i class="menu-item-icon fa fa-fw fa-tachometer"></i> <br>首页</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-about">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/about/" rel="section"><i class="menu-item-icon fa fa-fw fa-vcard"></i> <br>关于</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-archives">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="/archives/" rel="section"><i class="menu-item-icon fa fa-fw fa-archive"></i> <br>归档</a>
+
+  </li>
+        
+        
+        
+          
+          <li class="menu-item menu-item-文档">
+
+    
+    
+    
+      
+    
+
+    
+
+    <a href="https://files.arguler.com/" rel="noopener" target="_blank"><i class="menu-item-icon fa fa-fw fa-cloud"></i> <br>文档</a>
+
+  </li>
+
+      
+      
+    </ul>
+  
+
+  
+
+  
+</nav>
+
+
+
+  
+
+
+
+</div>
+    </header>
+
+    
+
+
+    <main id="main" class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+            
+
+          
+          <div id="content" class="content">
+            
+
+  <div id="posts" class="posts-expand">
+    
+
+  
+
+  
+  
+  
+
+  
+
+  <article class="post post-type-normal" itemscope itemtype="http://schema.org/Article">
+  
+  
+  
+  <div class="post-block">
+    <link itemprop="mainEntityOfPage" href="http://arguler.com/2019/03/19/Seafile Onlyoffice 配置/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="name" content="Arguler">
+      <meta itemprop="description" content="一个PM的记事本">
+      <meta itemprop="image" content="/images/avatar.gif">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="ARGULER">
+    </span>
+
+    
+      <header class="post-header">
+
+        
+        
+          <h1 class="post-title" itemprop="name headline">使用Nginx与Docker配置Seafile+Onlyoffice环境
+
+              
+            
+          </h1>
+        
+
+        <div class="post-meta">
+          <span class="post-time">
+
+            
+            
+            
+
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">发表于</span>
+              
+
+              
+                
+              
+
+              <time title="创建时间：2019-03-19 11:27:44" itemprop="dateCreated datePublished" datetime="2019-03-19T11:27:44+08:00">2019-03-19</time>
+            
+
+            
+              
+
+              
+                
+                <span class="post-meta-divider">|</span>
+                
+
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                
+                  <span class="post-meta-item-text">更新于</span>
+                
+                <time title="修改时间：2019-03-20 09:03:35" itemprop="dateModified" datetime="2019-03-20T09:03:35+08:00">2019-03-20</time>
+              
+            
+          </span>
+
+          
+            <span class="post-category">
+            
+              <span class="post-meta-divider">|</span>
+            
+              <span class="post-meta-item-icon">
+                <i class="fa fa-folder-o"></i>
+              </span>
+              
+                <span class="post-meta-item-text">分类于</span>
+              
+              
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing"><a href="/categories/Linux/" itemprop="url" rel="index"><span itemprop="name">Linux</span></a></span>
+
+                
+                
+              
+            </span>
+          
+
+          
+            
+            
+              
+              <span class="post-comments-count">
+                <span class="post-meta-divider">|</span>
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-comment-o"></i>
+                </span>
+            
+              
+                <span class="post-meta-item-text">评论数：</span>
+                <a href="/2019/03/19/Seafile Onlyoffice 配置/#SOHUCS" itemprop="discussionUrl">
+                  <span id="changyan_count_unit" class="post-comments-count hc-comment-count" data-xid="2019/03/19/Seafile Onlyoffice 配置/" itemprop="commentCount"></span>
+                </a>
+              
+            
+          
+
+          
+          
+
+          
+
+          
+
+          
+
+        </span></div>
+      </header>
+    
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+      
+
+      
+        <p>很多情况下，需要使用自建的云端文件存储软件满足日常私有化使用需求。</p>
+<p>借此机会，记录一下使用Docker化的Seafile和OnlyOffice组件，在阿里云中配置私人云端文件存储服务，并可以在线编辑。<br><a id="more"></a></p>
+<p><strong>使用到的组件：</strong><br><a href="https://www.aliyun.com/" target="_blank" rel="noopener">阿里云</a>：用于提供云服务器<br><a href="https://oneinstack.com/" target="_blank" rel="noopener">Oneinstack</a>：用于配置Nginx环境，便于扩展<br><a href="https://www.seafile.com/home/" target="_blank" rel="noopener">Seafile</a>：用于提供文件存储服务<br><a href="https://www.onlyoffice.com/document-editor.aspx" target="_blank" rel="noopener">OnlyOffice-DocumentServer</a>：用于提供文档在线编辑服务<br><a href="https://github.com/neroxps/Docker-Only-Office-Chinese-font" target="_blank" rel="noopener">OnlyOffice-Chinese-Fonts</a>：用于Onlyoffice编辑文本时使用的中文字体</p>
+<h1 id="步骤0：预配置环境"><a href="#步骤0：预配置环境" class="headerlink" title="步骤0：预配置环境"></a>步骤0：预配置环境</h1><p>阿里云的服务器使用了Debian作为操作系统。<br>创建一个新的用户，并加入sudo组，避免使用root账户直接操作Debian系统。<br>修改源地址为清华源镜像（可选）：  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释</span></span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch main contrib non-free</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch main contrib non-free</span></span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-updates main contrib non-free</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-updates main contrib non-free</span></span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-backports main contrib non-free</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/debian/ stretch-backports main contrib non-free</span></span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/debian-security stretch/updates main contrib non-free</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/debian-security stretch/updates main contrib non-free</span></span><br></pre></td></tr></table></figure>
+<p>增加Docker的源地址：  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /etc/apt/sources.list.d/</span><br><span class="line">$ sudo nano docker-ce.list</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deb [arch=amd64] https://mirrors.tuna.tsinghua.edu.cn/docker-ce/linux/debian stretch stable</span><br></pre></td></tr></table></figure>
+<p>信任 Docker 的 GPG 公钥:  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -</span><br></pre></td></tr></table></figure>
+<p>更新Debian到最新版：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt update &amp;&amp; sudo apt dist-upgrade</span><br></pre></td></tr></table></figure>
+<p>安装一些软件：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt install apt-transport-https ca-certificates curl gnupg2 software-properties-common zsh git htop docker-ce</span><br></pre></td></tr></table></figure>
+<p>配置一下zsh，使用oh-my-zsh：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sh -c <span class="string">"<span class="variable">$(curl -fsSL https://raw.github.com/robbyrussell/oh-my-zsh/master/tools/install.sh)</span>"</span></span><br></pre></td></tr></table></figure>
+<p>添加Docker国内镜像加速，修改</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo nano /etc/docker/daemon.json</span><br></pre></td></tr></table></figure>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [<span class="string">"https://registry.docker-cn.com"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>或者<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">  <span class="string">"registry-mirrors"</span>: [<span class="string">"https://docker.mirrors.sjtug.sjtu.edu.cn"</span>]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>配置Docker用户减少sudo输入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo usermod -aG docker <span class="variable">$USER</span>  // 需要重新载入 shell 以生效</span><br></pre></td></tr></table></figure>
+<p>重启Docker服务并清理垃圾：<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ sudo systemctl daemon-reload</span><br><span class="line">$ sudo systemctl restart docker.service</span><br><span class="line">$ sudo apt clean &amp;&amp; sudo apt autoclean</span><br></pre></td></tr></table></figure></p>
+<hr>
+<h1 id="步骤1：搭建-Nginx-环境"><a href="#步骤1：搭建-Nginx-环境" class="headerlink" title="步骤1：搭建 Nginx 环境"></a>步骤1：搭建 Nginx 环境</h1><p>总体思路是，使用 Nginx 作为总的前端代理，配置 HTTPS 后，反向代理到 Seafile 和 Onlyoffice。<br>使用Oneinstack的环境包，可以方便在后续进一步配置其他的服务。<br><a href="https://oneinstack.com/install/" target="_blank" rel="noopener">Oneinstack安装指南</a> 中详细说明了安装的方法。<br>此处我只安装了 Nginx，并开启了SSL使用的是Oneinstack自带的 <a href="https://letsencrypt.org/" target="_blank" rel="noopener">Let’s Encrypt</a> 脚本，并添加了网站 vhost。</p>
+<hr>
+<h1 id="步骤2：创建-Seafile-和-Onlyoffice-的-Docker"><a href="#步骤2：创建-Seafile-和-Onlyoffice-的-Docker" class="headerlink" title="步骤2：创建 Seafile 和 Onlyoffice 的 Docker"></a>步骤2：创建 Seafile 和 Onlyoffice 的 Docker</h1><p>将 Seafile Docker 的80端口映射为81端口（此处初始化 Seafile 的管理员账户及密码）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -d --name seafile --restart always \</span><br><span class="line">   -e SEAFILE_ADMIN_EMAIL=Your_EMail_Address@qq.com \</span><br><span class="line">   -e SEAFILE_ADMIN_PASSWORD=Your_Strong_Password \</span><br><span class="line">   -v /opt/seafile-data:/shared \</span><br><span class="line">   -p 81:80 \</span><br><span class="line">   seafileltd/seafile:latest</span><br></pre></td></tr></table></figure>
+<p>将 Onlyoffice Docker 的80端口映射为82端口：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ docker run -d --name onlyoffice --restart always \</span><br><span class="line">    -v /app/onlyoffice/DocumentServer/logs:/var/<span class="built_in">log</span>/onlyoffice  \</span><br><span class="line">    -v /app/onlyoffice/DocumentServer/data:/var/www/onlyoffice/Data  \</span><br><span class="line">    -v /app/onlyoffice/DocumentServer/lib:/var/lib/onlyoffice \</span><br><span class="line">    -v /app/onlyoffice/DocumentServer/db:/var/lib/postgresql \</span><br><span class="line">    -v /app/onlyoffice/DocumentServer/data/fonts:/usr/share/fonts/truetype/custom \</span><br><span class="line">    -p 82:80 \</span><br><span class="line">    onlyoffice/documentserver</span><br></pre></td></tr></table></figure>
+<p>从GitHub上找到合适的中文字体 <a href="https://github.com/neroxps/Docker-Only-Office-Chinese-font" target="_blank" rel="noopener">winfont</a>,并将它应用到 Docker</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$ sudo mkdir /app/onlyoffice/DocumentServer/data/fonts</span><br><span class="line">$ sudo mv winfont /app/onlyoffice/DocumentServer/data/fonts</span><br></pre></td></tr></table></figure>
+<p>进入Docker后执行（默认为root环境）<br><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">$ docker <span class="built_in">exec</span> -it onlyoffice bash</span><br><span class="line"></span><br><span class="line"><span class="comment"># fc-cache -f -v &amp;&amp; /usr/bin/documentserver-generate-allfonts.sh </span></span><br><span class="line"><span class="comment"># exit</span></span><br></pre></td></tr></table></figure></p>
+<hr>
+<h1 id="步骤3：修改网站的-Nginx-配置文件"><a href="#步骤3：修改网站的-Nginx-配置文件" class="headerlink" title="步骤3：修改网站的 Nginx 配置文件"></a>步骤3：修改网站的 Nginx 配置文件</h1><p><strong>特别鸣谢 <a href="https://github.com/felixonmars" target="_blank" rel="noopener">@Felix Yan</a> 提供的技术支持！</strong>  </p>
+<p>修改新的Nginx配置：<br>文件位置：/usr/local/nginx/conf/vhost/YOUR_DOMIN.conf  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Required for OnlyOffice DocumentServer</span></span><br><span class="line">map <span class="variable">$http_x_forwarded_proto</span> <span class="variable">$the_scheme</span> &#123;</span><br><span class="line">    default <span class="variable">$http_x_forwarded_proto</span>;</span><br><span class="line">    <span class="string">""</span> <span class="variable">$scheme</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">map <span class="variable">$http_x_forwarded_host</span> <span class="variable">$the_host</span> &#123;</span><br><span class="line">    default <span class="variable">$http_x_forwarded_host</span>;</span><br><span class="line">    <span class="string">""</span> <span class="variable">$host</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">map <span class="variable">$http_upgrade</span> <span class="variable">$proxy_connection</span> &#123;</span><br><span class="line">    default upgrade;</span><br><span class="line">    <span class="string">""</span> close;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">server &#123;</span><br><span class="line">  listen 80;</span><br><span class="line">  listen 443 ssl http2;</span><br><span class="line">  </span><br><span class="line">  server_name docs.local;  </span><br><span class="line">  ssl_certificate /usr/<span class="built_in">local</span>/nginx/conf/ssl/YOUR_DOMIN.crt;</span><br><span class="line">  ssl_certificate_key /usr/<span class="built_in">local</span>/nginx/conf/ssl/YOUR_DOMIN.key;</span><br><span class="line">  </span><br><span class="line">  ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;  </span><br><span class="line">  ssl_ciphers TLS13-AES-256-GCM-SHA384:TLS13-CHACHA20-POLY1305-SHA256:TLS13-AES-128-GCM-SHA256:TLS13-AES-128-CCM-8-SHA256:TLS13-AES-128-CCM-SHA256:EECDH+CHACHA20:EECDH+AES128:RSA+AES128:EECDH+AES256:RSA+AES256:EECDH+3DES:RSA+3DES:!MD5;</span><br><span class="line">  ssl_prefer_server_ciphers on;</span><br><span class="line">  ssl_session_timeout 10m;</span><br><span class="line">  ssl_session_cache <span class="built_in">builtin</span>:1000 shared:SSL:10m;</span><br><span class="line">  ssl_buffer_size 1400;  </span><br><span class="line">  ssl_stapling on;</span><br><span class="line">  ssl_stapling_verify on;</span><br><span class="line">  </span><br><span class="line">  add_header Strict-Transport-Security max-age=15768000;</span><br><span class="line">  access_log /data/wwwlogs/YOUR_DOMIN_nginx.log combined;</span><br><span class="line">  </span><br><span class="line">  <span class="comment">#index index.html index.htm index.php;</span></span><br><span class="line">  <span class="comment">#root /data/wwwroot/YOUR_DOMIN;</span></span><br><span class="line">  </span><br><span class="line">  <span class="keyword">if</span> (<span class="variable">$ssl_protocol</span> = <span class="string">""</span>) &#123; <span class="built_in">return</span> 301 https://<span class="variable">$host</span><span class="variable">$request_uri</span>; &#125;</span><br><span class="line">  </span><br><span class="line">  include /usr/<span class="built_in">local</span>/nginx/conf/rewrite/other.conf;</span><br><span class="line">  <span class="comment">#error_page 404 /404.html;</span></span><br><span class="line">  <span class="comment">#error_page 502 /502.html;</span></span><br><span class="line">  </span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">## 代理到Seafile-Docker的80端口</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  location / &#123;</span><br><span class="line">    proxy_pass http://127.0.0.1:81;</span><br><span class="line">    proxy_http_version 1.1;</span><br><span class="line">    proxy_set_header X-Real-IP <span class="variable">$remote_addr</span>;</span><br><span class="line">    proxy_set_header X-Forwarded-Proto <span class="variable">$the_scheme</span>;</span><br><span class="line">    proxy_set_header X-Forwarded-For <span class="variable">$proxy_add_x_forwarded_for</span>;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  <span class="comment">## onlyoffice的子目录“editor”,端口82；</span></span><br><span class="line">  <span class="comment">#</span></span><br><span class="line">  location /editor/ &#123;</span><br><span class="line">    <span class="comment"># IMPORTANT ! - Trailing slash !</span></span><br><span class="line">    proxy_pass http://127.0.0.1:82/;</span><br><span class="line"></span><br><span class="line">    proxy_http_version 1.1;</span><br><span class="line">    client_max_body_size 100M; <span class="comment"># Limit Document size to 100MB</span></span><br><span class="line">    proxy_read_timeout 3600s;</span><br><span class="line">    proxy_connect_timeout 3600s;</span><br><span class="line">    proxy_set_header Upgrade <span class="variable">$http_upgrade</span>;</span><br><span class="line">    proxy_set_header Connection <span class="variable">$proxy_connection</span>;</span><br><span class="line"></span><br><span class="line">    <span class="comment"># IMPORTANT ! - Subfolder and NO trailing slash !</span></span><br><span class="line">    proxy_set_header X-Forwarded-Host <span class="variable">$the_host</span>/editor;</span><br><span class="line">    proxy_set_header X-Forwarded-Proto <span class="variable">$the_scheme</span>;</span><br><span class="line">    proxy_set_header X-Forwarded-For <span class="variable">$proxy_add_x_forwarded_for</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>重启 Nginx 服务：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ sudo systemctl restart nginx.service</span><br></pre></td></tr></table></figure>
+<p>此时应该可以使用域名访问 Seafile 了，在域名后加入“/editor/”路径，可以访问 Onlyoffice。  </p>
+<hr>
+<h1 id="步骤4：修改-Seafile-的配置文件"><a href="#步骤4：修改-Seafile-的配置文件" class="headerlink" title="步骤4：修改 Seafile 的配置文件"></a>步骤4：修改 Seafile 的配置文件</h1><p>修改 seahub_settings.py（Docker内部）：  </p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ docker <span class="built_in">exec</span> -it seafile bash</span><br><span class="line"></span><br><span class="line"><span class="comment"># vi /shared/seafile/conf/seahub_settings.py</span></span><br></pre></td></tr></table></figure>
+<p>添加如下内容：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Enable Only Office</span></span><br><span class="line">ENABLE_ONLYOFFICE = True</span><br><span class="line">VERIFY_ONLYOFFICE_CERTIFICATE = True</span><br><span class="line"><span class="comment">## 以下路径需要调试 http or https?</span></span><br><span class="line">ONLYOFFICE_APIJS_URL = <span class="string">'https://YOUR_DOMIN/editor/web-apps/apps/api/documents/api.js'</span></span><br><span class="line">ONLYOFFICE_FILE_EXTENSION = (<span class="string">'doc'</span>, <span class="string">'docx'</span>, <span class="string">'ppt'</span>, <span class="string">'pptx'</span>, <span class="string">'xls'</span>, <span class="string">'xlsx'</span>, <span class="string">'odt'</span>, <span class="string">'fodt'</span>, <span class="string">'odp'</span>, <span class="string">'fodp'</span>, <span class="string">'ods'</span>, <span class="string">'fods'</span>)</span><br><span class="line">ONLYOFFICE_EDIT_FILE_EXTENSION = (<span class="string">'docx'</span>, <span class="string">'pptx'</span>, <span class="string">'xlsx'</span>)</span><br></pre></td></tr></table></figure>
+<p>重启Seafile（Docker内部）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">## 进入Seafile的目录后 /opt 下，找到脚本</span></span><br><span class="line">./seafile.sh restart</span><br><span class="line">./seahub.sh restart</span><br></pre></td></tr></table></figure>
+<p>退出 Docker 后，登录 Seafile 的后台（使用Docker创建时使用的邮箱以及密码），修改 SERVICE_URL 和 FILE_SERVER_ROOT。<br>更新 SERVICE_URL 和 FILE_SERVER_ROOT 这两个配置项，域名后面不要有斜杠。<br>否则无法通过 Web 正常的上传和下载文件。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">SERVICE_URL: https://YOUR_DOMIN</span><br><span class="line">FILE_SERVER_ROOT: https://YOUR_DOMIN/seafhttp</span><br></pre></td></tr></table></figure>
+<p>现在可以正常使用服务了。</p>
+<hr>
+<h1 id="步骤5：额外事项"><a href="#步骤5：额外事项" class="headerlink" title="步骤5：额外事项"></a>步骤5：额外事项</h1><p>但需要注意的有：  </p>
+<ul>
+<li>Let’s Encrypt 的有效期仅为三个月。  </li>
+<li>在内网部署（或者虚拟机部署）时，因为 Onlyoffice 的 Docker 无法解析域名，因此会导致内部的 Nodejs 报错。</li>
+<li>在使用自签证书时，Onlyoffice 会判断SSL证书为自签而拒绝链接，可以尝试查看官方文档，寻找解决办法。</li>
+</ul>
+<p><strong>参考文档：</strong><br><a href="https://mirrors.tuna.tsinghua.edu.cn/help/docker-ce/" target="_blank" rel="noopener">清华源镜像</a>：Docker的源<br><a href="https://manual-cn.seafile.com/deploy/deploy_with_docker.html" target="_blank" rel="noopener">Seafile Docker部署</a>：Seafile官方的Docker部署指南<br><a href="https://github.com/ONLYOFFICE/Docker-DocumentServer" target="_blank" rel="noopener">Github Docker-DocumentServer</a>：官方Docker化部署OnlyOffice Document Server指南</p>
+
+      
+    </div>
+
+    
+
+    
+    
+    
+
+    
+
+    
+      
+    
+    
+
+    
+
+    <footer class="post-footer">
+      
+        <div class="post-tags">
+          
+            <a href="/tags/Nginx/" rel="tag"># Nginx</a>
+          
+            <a href="/tags/Seafile/" rel="tag"># Seafile</a>
+          
+            <a href="/tags/Onlyoffice/" rel="tag"># Onlyoffice</a>
+          
+            <a href="/tags/Docker/" rel="tag"># Docker</a>
+          
+        </div>
+      
+
+      
+      
+      
+
+      
+
+      
+      
+    </footer>
+  </div>
+  
+  
+  
+  </article>
+
+
+  </div>
+
+
+          </div>
+          
+
+  
+    <div class="comments" id="comments">
+      <div id="SOHUCS"></div>
+    </div>
+
+  
+
+
+
+        </div>
+        
+          
+  
+  <div class="sidebar-toggle">
+    <div class="sidebar-toggle-line-wrap">
+      <span class="sidebar-toggle-line sidebar-toggle-line-first"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-middle"></span>
+      <span class="sidebar-toggle-line sidebar-toggle-line-last"></span>
+    </div>
+  </div>
+
+  <aside id="sidebar" class="sidebar">
+    <div class="sidebar-inner">
+
+      
+
+      
+        <ul class="sidebar-nav motion-element">
+          <li class="sidebar-nav-toc sidebar-nav-active" data-target="post-toc-wrap">
+            文章目录
+          </li>
+          <li class="sidebar-nav-overview" data-target="site-overview-wrap">
+            站点概览
+          </li>
+        </ul>
+      
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-overview">
+          <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+            
+              <p class="site-author-name" itemprop="name">Arguler</p>
+              <div class="site-description motion-element" itemprop="description">一个PM的记事本</div>
+          </div>
+
+          
+            <nav class="site-state motion-element">
+              
+                <div class="site-state-item site-state-posts">
+                
+                  <a href="/archives/">
+                
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">日志</span>
+                  </a>
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-categories">
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">1</span>
+                    <span class="site-state-item-name">分类</span>
+                  
+                </div>
+              
+
+              
+                
+                
+                <div class="site-state-item site-state-tags">
+                  
+                    
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                      
+                    
+                    <span class="site-state-item-count">4</span>
+                    <span class="site-state-item-name">标签</span>
+                  
+                </div>
+              
+            </nav>
+          
+
+          
+
+          
+
+          
+
+          
+
+          
+          
+
+          
+            
+          
+          
+
+        </div>
+      </div>
+
+      
+      <!--noindex-->
+        <div class="post-toc-wrap motion-element sidebar-panel sidebar-panel-active">
+          <div class="post-toc">
+
+            
+            
+            
+            
+
+            
+              <div class="post-toc-content"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤0：预配置环境"><span class="nav-number">1.</span> <span class="nav-text">步骤0：预配置环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤1：搭建-Nginx-环境"><span class="nav-number">2.</span> <span class="nav-text">步骤1：搭建 Nginx 环境</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤2：创建-Seafile-和-Onlyoffice-的-Docker"><span class="nav-number">3.</span> <span class="nav-text">步骤2：创建 Seafile 和 Onlyoffice 的 Docker</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤3：修改网站的-Nginx-配置文件"><span class="nav-number">4.</span> <span class="nav-text">步骤3：修改网站的 Nginx 配置文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤4：修改-Seafile-的配置文件"><span class="nav-number">5.</span> <span class="nav-text">步骤4：修改 Seafile 的配置文件</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#步骤5：额外事项"><span class="nav-number">6.</span> <span class="nav-text">步骤5：额外事项</span></a></li></ol></div>
+            
+
+          </div>
+        </div>
+      <!--/noindex-->
+      
+
+      
+
+    </div>
+  </aside>
+  
+
+
+        
+      </div>
+    </main>
+
+    <footer id="footer" class="footer">
+      <div class="footer-inner">
+        <div class="copyright">&copy; <span itemprop="copyrightYear">2019</span>
+  <span class="with-love" id="animate">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">Arguler</span>
+
+  
+
+  
+</div>
+
+
+  <div class="powered-by">由 <a href="https://hexo.io" class="theme-link" rel="noopener" target="_blank">Hexo</a> 强力驱动 v3.8.0</div>
+
+
+
+  <span class="post-meta-divider">|</span>
+
+
+
+  <div class="theme-info">主题 – <a href="https://theme-next.org" class="theme-link" rel="noopener" target="_blank">NexT.Pisces</a> v7.0.1</div>
+
+
+
+
+        
+
+
+
+
+
+
+
+
+        
+      </div>
+    </footer>
+
+    
+      <div class="back-to-top">
+        <i class="fa fa-arrow-up"></i>
+        
+      </div>
+    
+
+    
+
+    
+
+    
+  </div>
+
+  
+
+<script>
+  if (Object.prototype.toString.call(window.Promise) !== '[object Function]') {
+    window.Promise = null;
+  }
+</script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+  <script src="/lib/jquery/index.js?v=2.1.3"></script>
+
+  
+  <script src="/lib/velocity/velocity.min.js?v=1.2.1"></script>
+
+  
+  <script src="/lib/velocity/velocity.ui.min.js?v=1.2.1"></script>
+
+
+  
+
+
+  <script src="/js/src/utils.js?v=7.0.1"></script>
+
+  <script src="/js/src/motion.js?v=7.0.1"></script>
+
+
+
+  
+  
+
+
+  <script src="/js/src/affix.js?v=7.0.1"></script>
+
+  <script src="/js/src/schemes/pisces.js?v=7.0.1"></script>
+
+
+
+  
+  <script src="/js/src/scrollspy.js?v=7.0.1"></script>
+<script src="/js/src/post-details.js?v=7.0.1"></script>
+
+
+
+  
+
+
+  <script src="/js/src/next-boot.js?v=7.0.1"></script>
+
+
+  
+
+  
+
+  
+
+  
+  
+  <script>
+  (function() {
+    var appid = 'cyu8MQO2L';
+    var conf = '7055aa425321bd8b4aa8600f98d42a58';
+    var width = window.innerWidth || document.documentElement.clientWidth;
+    if (width < 960) {
+      window.document.write('<script id="changyan_mobile_js" charset="utf-8" type="text/javascript" src="https://changyan.sohu.com/upload/mobile/wap-js/changyan_mobile.js?client_id=' + appid + '&conf=' + conf + '"><\/script>');
+    }
+    else {
+      var loadJs=function(d,a){var c=document.getElementsByTagName("head")[0]||document.head||document.documentElement;var b=document.createElement("script");b.setAttribute("type","text/javascript");b.setAttribute("charset","UTF-8");b.setAttribute("src",d);if(typeof a==="function"){if(window.attachEvent){b.onreadystatechange=function(){var e=b.readyState;if(e==="loaded"||e==="complete"){b.onreadystatechange=null;a()}}}else{b.onload=a}}c.appendChild(b)};loadJs("https://changyan.sohu.com/upload/changyan.js",function(){window.changyan.api.config({appid:appid,conf:conf})});
+    }
+  })();
+  </script>
+  <script src="https://assets.changyan.sohu.com/upload/plugins/plugins.count.js"></script>
+
+
+
+
+
+  
+
+
+  
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+</body>
+</html>
